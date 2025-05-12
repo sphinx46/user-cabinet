@@ -39,7 +39,13 @@ public class UserServiceImpl implements UserService {
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        String normalizedPhone = normalizePhoneNumber(user.getPhoneNumber());
+        user.setPhoneNumber(normalizedPhone);
         return repository.save(user);
+    }
+
+    private String normalizePhoneNumber(String phone) {
+        return phone.replaceAll("[^+0-9]", "");
     }
 
     @Override

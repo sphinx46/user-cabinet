@@ -1,63 +1,127 @@
 package ru.mordvinovil.user_cabinet.controller;
 
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.mordvinovil.user_cabinet.exception.UserAlreadyExistsException;
+import ru.mordvinovil.user_cabinet.exception.UserNotFoundException;
 import ru.mordvinovil.user_cabinet.model.User;
+import ru.mordvinovil.user_cabinet.model.dto.*;
 import ru.mordvinovil.user_cabinet.service.UserService;
 
 import java.util.List;
 
-
 @RestController
 @RequestMapping("/api/v1/users")
 public class UserController {
-    private final UserService service;
 
-    public UserController(UserService service) {
-        this.service = service;
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
     @GetMapping
-    public List<User> findAllUsers() {
-        List<User> users = service.findAllUsers();
-        users.forEach(user -> user.setPassword(null));
-        return users;
-    }
-
-    @PostMapping("register_user")
-    public String registerUser(@Valid @RequestBody User user) {
-        service.registerUser(user);
-        return "User successfully register.";
-    }
-
-    @PutMapping("update_user")
-    public String updateUser(@RequestBody User user) {
-        service.updateUser(user);
-        return "User successfully updated.";
+    public ResponseEntity<List<UserResponseDto>> getAllUsers() {
+        List<User> users = userService.findAllUsers();
+        List<UserResponseDto> response = users.stream()
+            .map(this::convertToDto)
+            .toList();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{email}")
-    public User findByEmail(@PathVariable  String email) {
-        User user = service.findByEmail(email);
-        if (user != null) {
-            user.setPassword(null);
+    public ResponseEntity<UserResponseDto> getUserByEmail(@PathVariable String email) {
+        try {
+            User user = userService.findByEmail(email);
+            return ResponseEntity.ok(convertToDto(user));
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.notFound().build();
         }
+    }
+
+    @PostMapping("/register_user")
+    public ResponseEntity<?> registerUser(@Valid @RequestBody UserRegistrationDto registrationDto) {
+        try {
+            User user = convertToEntity(registrationDto);
+            User createdUser = userService.registerUser(user);
+            return ResponseEntity.status(HttpStatus.CREATED).body(convertToDto(createdUser));
+        } catch (UserAlreadyExistsException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/{email}")
+    public ResponseEntity<?> updateUser(
+        @PathVariable String email,
+        @Valid @RequestBody UserUpdateDto updateDto) {
+        try {
+            User user = userService.findByEmail(email);
+
+            user.setFirstName(updateDto.getFirstName());
+            user.setLastName(updateDto.getLastName());
+            user.setPhoneNumber(updateDto.getPhoneNumber());
+            user.setDateOfBirth(updateDto.getDateOfBirth());
+
+            User updatedUser = userService.updateUser(user);
+            return ResponseEntity.ok(convertToDto(updatedUser));
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (UserAlreadyExistsException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
+    }
+
+    @PatchMapping("/{email}/password")
+    public ResponseEntity<?> changePassword(
+        @PathVariable String email,
+        @Valid @RequestBody ChangePasswordDto passwordDto) {
+        try {
+            userService.changePassword(
+                email,
+                passwordDto.getOldPassword(),
+                passwordDto.getNewPassword()
+            );
+            return ResponseEntity.noContent().build();
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{email}")
+    public ResponseEntity<Void> deleteUser(@PathVariable String email) {
+        try {
+            userService.deleteUser(email);
+            return ResponseEntity.noContent().build();
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    private User convertToEntity(UserRegistrationDto dto) {
+        User user = new User();
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
+        user.setEmail(dto.getEmail());
+        user.setPhoneNumber(dto.getPhoneNumber());
+        user.setDateOfBirth(dto.getDateOfBirth());
+        user.setPassword(dto.getPassword());
         return user;
     }
 
-
-    @DeleteMapping("delete_user/{email}")
-    public void deleteUser(@PathVariable String email) {
-        service.deleteUser(email);
-    }
-
-    @PutMapping("change_password/{email}/{oldPassword}/{newPassword}")
-    public String changePassword(
-            @PathVariable String email,
-            @PathVariable String oldPassword,
-            @PathVariable String newPassword) {
-        service.changePassword(email, oldPassword, newPassword);
-        return "Password successfully changed.";
+    private UserResponseDto convertToDto(User user) {
+        return UserResponseDto.builder()
+            .firstName(user.getFirstName())
+            .lastName(user.getLastName())
+            .email(user.getEmail())
+            .phoneNumber(user.getPhoneNumber())
+            .dateOfBirth(user.getDateOfBirth())
+            .build();
     }
 }

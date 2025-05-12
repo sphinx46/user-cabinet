@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -33,6 +34,11 @@ public class User {
     @Email(message = "Email should be valid.")
     @Column(unique = true)
     private String email;
+
+    @NotBlank(message = "Phone number is not filled.")
+    @Pattern(regexp = "^\\+?[0-9\\-\\s()]{10,20}$", message = "Phone number should be valid.")
+    @Column(unique = true)
+    private String phoneNumber;
 
     @DateTimeFormat
     private LocalDate dateOfBirth;
@@ -111,5 +117,13 @@ public class User {
 
     public String getPlainPassword() {
         return plainPassword;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 }
