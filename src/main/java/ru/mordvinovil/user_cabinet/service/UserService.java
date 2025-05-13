@@ -10,5 +10,7 @@ public interface UserService {
     User updateUser(User user);
     User findByEmail(String email);
     void deleteUser(String email);
+
+
     void changePassword(String email, String oldPassword, String newPassword);
 }

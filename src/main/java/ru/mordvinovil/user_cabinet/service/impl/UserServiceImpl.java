@@ -51,17 +51,24 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public User updateUser(User user) {
-        if (repository.existsByEmail(user.getEmail())) {
-            throw new UserAlreadyExistsException("User with email " +
-                    user.getEmail() + " already exists");
-        }
-
         User foundUser = repository.findByEmail(user.getEmail())
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        foundUser.setFirstName(user.getFirstName());
-        foundUser.setLastName(user.getLastName());
-        foundUser.setDateOfBirth(user.getDateOfBirth());
+        if (user.getFirstName() != null) {
+            foundUser.setFirstName(user.getFirstName());
+        }
+        if (user.getLastName() != null) {
+            foundUser.setLastName(user.getLastName());
+        }
+        if (user.getDateOfBirth() != null) {
+            foundUser.setDateOfBirth(user.getDateOfBirth());
+        }
+        if (user.getPhoneNumber() != null) {
+            foundUser.setPhoneNumber(normalizePhoneNumber(user.getPhoneNumber()));
+        }
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            foundUser.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
 
         return repository.save(foundUser);
     }
@@ -82,6 +89,7 @@ public class UserServiceImpl implements UserService {
         }
         repository.deleteByEmail(email);
     }
+
 
     @Override
     @Transactional

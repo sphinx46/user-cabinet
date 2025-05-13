@@ -1,9 +1,9 @@
 package ru.mordvinovil.user_cabinet.controller;
 
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import ru.mordvinovil.user_cabinet.exception.UserAlreadyExistsException;
 import ru.mordvinovil.user_cabinet.exception.UserNotFoundException;
@@ -18,9 +18,11 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, PasswordEncoder passwordEncoder) {
         this.userService = userService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping
@@ -55,17 +57,31 @@ public class UserController {
         }
     }
 
-    @PutMapping("/{email}")
+    @PutMapping("/{email}/update_user")
     public ResponseEntity<?> updateUser(
         @PathVariable String email,
         @Valid @RequestBody UserUpdateDto updateDto) {
         try {
             User user = userService.findByEmail(email);
 
-            user.setFirstName(updateDto.getFirstName());
-            user.setLastName(updateDto.getLastName());
-            user.setPhoneNumber(updateDto.getPhoneNumber());
-            user.setDateOfBirth(updateDto.getDateOfBirth());
+            if (updateDto.getFirstName() != null) {
+                user.setFirstName(updateDto.getFirstName());
+            }
+            if (updateDto.getLastName() != null) {
+                user.setLastName(updateDto.getLastName());
+            }
+            if (updateDto.getPhoneNumber() != null) {
+                user.setPhoneNumber(updateDto.getPhoneNumber());
+            }
+            if (updateDto.getDateOfBirth() != null) {
+                user.setDateOfBirth(updateDto.getDateOfBirth());
+            }
+
+            if (updateDto.getPassword() != null && !updateDto.getPassword().isEmpty()) {
+                user.setPassword(updateDto.getPassword());
+            } else {
+                user.setPassword("1");
+            }
 
             User updatedUser = userService.updateUser(user);
             return ResponseEntity.ok(convertToDto(updatedUser));
@@ -75,6 +91,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
     }
+
 
     @PatchMapping("/{email}/password")
     public ResponseEntity<?> changePassword(

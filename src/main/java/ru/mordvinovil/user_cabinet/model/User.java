@@ -43,9 +43,6 @@ public class User {
     @DateTimeFormat
     private LocalDate dateOfBirth;
 
-    @NotBlank(message = "Password is not filled.")
-    @Column(length = 60)
-    @Size(min = 8, message = "Password must be at least 6 characters.")
     private String password;
 
     @Transient
@@ -79,7 +76,11 @@ public class User {
         this.dateOfBirth = dateOfBirth;
     }
 
-    public void setPassword(@NotBlank(message = "Password is not filled.") @Size(min = 8, message = "Password must be at least 6 characters.") String password) {
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
         this.password = password;
     }
 
@@ -111,9 +112,6 @@ public class User {
         return dateOfBirth;
     }
 
-    public @NotBlank(message = "Password is not filled.") @Size(min = 8, message = "Password must be at least 6 characters.") String getPassword() {
-        return password;
-    }
 
     public String getPlainPassword() {
         return plainPassword;
