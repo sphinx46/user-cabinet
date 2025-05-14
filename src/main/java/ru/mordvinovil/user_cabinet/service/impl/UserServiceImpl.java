@@ -48,37 +48,37 @@ public class UserServiceImpl implements UserService {
         return phone.replaceAll("[^+0-9]", "");
     }
 
-@Override
-@Transactional
-public User updateUser(User user) {
-    User foundUser = repository.findByEmail(user.getEmail())
-        .orElseThrow(() -> new UserNotFoundException("User not found"));
+    @Override
+    @Transactional
+    public User updateUser(User userUpdates) {
+        User existingUser = repository.findByEmail(userUpdates.getEmail())
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-    if (user.getFirstName() != null) {
-        foundUser.setFirstName(user.getFirstName());
-    }
-    if (user.getLastName() != null) {
-        foundUser.setLastName(user.getLastName());
-    }
-    if (user.getDateOfBirth() != null) {
-        foundUser.setDateOfBirth(user.getDateOfBirth());
-    }
-    if (user.getPhoneNumber() != null) {
-        foundUser.setPhoneNumber(normalizePhoneNumber(user.getPhoneNumber()));
-    }
+        // Обновляем только те поля, которые пришли в запросе
+        if (userUpdates.getFirstName() != null) {
+            existingUser.setFirstName(userUpdates.getFirstName());
+        }
+        if (userUpdates.getLastName() != null) {
+            existingUser.setLastName(userUpdates.getLastName());
+        }
+        if (userUpdates.getDateOfBirth() != null) {
+            existingUser.setDateOfBirth(userUpdates.getDateOfBirth());
+        }
+        if (userUpdates.getPhoneNumber() != null) {
+            existingUser.setPhoneNumber(normalizePhoneNumber(userUpdates.getPhoneNumber()));
+        }
 
-    if (user.getPassword() != null && !user.getPassword().isEmpty() && !user.getPassword().equals("1")) {
-        foundUser.setPassword(passwordEncoder.encode(user.getPassword()));
-    }
+        if (userUpdates.getPassword() != null && !userUpdates.getPassword().isEmpty()) {
+            existingUser.setPassword(passwordEncoder.encode(userUpdates.getPassword()));
+        }
 
-    return repository.save(foundUser);
-}
+        return repository.save(existingUser);
+    }
 
     @Override
     public User findByEmail(String email) {
         User user = repository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
-        user.setPassword(null);
         return user;
     }
 

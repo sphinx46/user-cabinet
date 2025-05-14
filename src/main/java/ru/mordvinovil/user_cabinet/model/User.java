@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
@@ -16,7 +17,7 @@ import java.time.Period;
 
 @Entity
 @Table(name = "users")
-
+@DynamicUpdate
 public class User {
     @GeneratedValue
     @Id
@@ -43,6 +44,7 @@ public class User {
     @DateTimeFormat
     private LocalDate dateOfBirth;
 
+    @Column()
     private String password;
 
     @Transient
@@ -124,4 +126,5 @@ public class User {
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
+
 }

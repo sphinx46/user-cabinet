@@ -59,37 +59,50 @@ public class UserController {
         }
     }
 
-@PatchMapping("/{email}/update_user")
-public ResponseEntity<?> partialUpdateUser(
-    @PathVariable String email,
-    @RequestBody Map<String, Object> updates) {
-    try {
-        User user = userService.findByEmail(email);
+    @PatchMapping("/{email}/update_user")
+    public ResponseEntity<?> partialUpdateUser(
+        @PathVariable String email,
+        @RequestBody Map<String, Object> updates) {
+        try {
+            User existingUser = userService.findByEmail(email);
 
-        if (updates.containsKey("firstName")) {
-            user.setFirstName((String) updates.get("firstName"));
-        }
-        if (updates.containsKey("lastName")) {
-            user.setLastName((String) updates.get("lastName"));
-        }
-        if (updates.containsKey("phoneNumber")) {
-            user.setPhoneNumber((String) updates.get("phoneNumber"));
-        }
-        if (updates.containsKey("dateOfBirth")) {
-            user.setDateOfBirth(LocalDate.parse((String) updates.get("dateOfBirth")));
-        }
+            UserUpdateDto updateDto = new UserUpdateDto();
 
-        user.setPassword("1");
+            if (updates.containsKey("firstName")) {
+                updateDto.setFirstName((String) updates.get("firstName"));
+            }
+            if (updates.containsKey("lastName")) {
+                updateDto.setLastName((String) updates.get("lastName"));
+            }
+            if (updates.containsKey("phoneNumber")) {
+                updateDto.setPhoneNumber((String) updates.get("phoneNumber"));
+            }
+            if (updates.containsKey("dateOfBirth")) {
+                updateDto.setDateOfBirth(LocalDate.parse((String) updates.get("dateOfBirth")));
+            }
 
-        User updatedUser = userService.updateUser(user);
-        return ResponseEntity.ok(convertToDto(updatedUser));
-    } catch (UserNotFoundException e) {
-        return ResponseEntity.notFound().build();
-    } catch (UserAlreadyExistsException e) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            User userUpdates = convertUpdateDtoToEntity(updateDto, existingUser);
+
+            User updatedUser = userService.updateUser(userUpdates);
+            return ResponseEntity.ok(convertToDto(updatedUser));
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (UserAlreadyExistsException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
     }
-}
 
+    private User convertUpdateDtoToEntity(UserUpdateDto dto, User existingUser) {
+        User user = new User();
+        user.setId(existingUser.getId());
+        user.setEmail(existingUser.getEmail());
+        user.setFirstName(dto.getFirstName() != null ? dto.getFirstName() : existingUser.getFirstName());
+        user.setLastName(dto.getLastName() != null ? dto.getLastName() : existingUser.getLastName());
+        user.setPhoneNumber(dto.getPhoneNumber() != null ? dto.getPhoneNumber() : existingUser.getPhoneNumber());
+        user.setDateOfBirth(dto.getDateOfBirth() != null ? dto.getDateOfBirth() : existingUser.getDateOfBirth());
+
+        return user;
+    }
 
     @PatchMapping("/{email}/password")
     public ResponseEntity<?> changePassword(
