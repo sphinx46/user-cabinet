@@ -21,6 +21,16 @@ public class InMemoryUserServiceImpl implements UserService {
     }
 
     @Override
+    public User findByEmailWithPassword(String email) {
+        User user = repository.findByEmail(email);
+        if (user == null) {
+            throw new IllegalArgumentException("User not found");
+        }
+        return user;
+    }
+
+
+    @Override
     public List<User> findAllUsers() {
         List<User> users = repository.findAllUsers();
         users.forEach(user -> user.setPassword(null));

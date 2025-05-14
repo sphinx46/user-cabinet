@@ -11,7 +11,9 @@ import ru.mordvinovil.user_cabinet.model.User;
 import ru.mordvinovil.user_cabinet.model.dto.*;
 import ru.mordvinovil.user_cabinet.service.UserService;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -57,40 +59,36 @@ public class UserController {
         }
     }
 
-    @PutMapping("/{email}/update_user")
-    public ResponseEntity<?> updateUser(
-        @PathVariable String email,
-        @Valid @RequestBody UserUpdateDto updateDto) {
-        try {
-            User user = userService.findByEmail(email);
+@PatchMapping("/{email}/update_user")
+public ResponseEntity<?> partialUpdateUser(
+    @PathVariable String email,
+    @RequestBody Map<String, Object> updates) {
+    try {
+        User user = userService.findByEmail(email);
 
-            if (updateDto.getFirstName() != null) {
-                user.setFirstName(updateDto.getFirstName());
-            }
-            if (updateDto.getLastName() != null) {
-                user.setLastName(updateDto.getLastName());
-            }
-            if (updateDto.getPhoneNumber() != null) {
-                user.setPhoneNumber(updateDto.getPhoneNumber());
-            }
-            if (updateDto.getDateOfBirth() != null) {
-                user.setDateOfBirth(updateDto.getDateOfBirth());
-            }
-
-            if (updateDto.getPassword() != null && !updateDto.getPassword().isEmpty()) {
-                user.setPassword(updateDto.getPassword());
-            } else {
-                user.setPassword("1");
-            }
-
-            User updatedUser = userService.updateUser(user);
-            return ResponseEntity.ok(convertToDto(updatedUser));
-        } catch (UserNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        } catch (UserAlreadyExistsException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        if (updates.containsKey("firstName")) {
+            user.setFirstName((String) updates.get("firstName"));
         }
+        if (updates.containsKey("lastName")) {
+            user.setLastName((String) updates.get("lastName"));
+        }
+        if (updates.containsKey("phoneNumber")) {
+            user.setPhoneNumber((String) updates.get("phoneNumber"));
+        }
+        if (updates.containsKey("dateOfBirth")) {
+            user.setDateOfBirth(LocalDate.parse((String) updates.get("dateOfBirth")));
+        }
+
+        user.setPassword("1");
+
+        User updatedUser = userService.updateUser(user);
+        return ResponseEntity.ok(convertToDto(updatedUser));
+    } catch (UserNotFoundException e) {
+        return ResponseEntity.notFound().build();
+    } catch (UserAlreadyExistsException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
     }
+}
 
 
     @PatchMapping("/{email}/password")
@@ -141,4 +139,21 @@ public class UserController {
             .dateOfBirth(user.getDateOfBirth())
             .build();
     }
+
+
+    @PostMapping("/login")
+    @CrossOrigin(origins = {"http://localhost", "http://127.0.0.1"}, allowCredentials = "true")
+    public ResponseEntity<?> login(@RequestBody LoginDto loginDto) {
+        try {
+            User user = userService.findByEmailWithPassword(loginDto.getEmail());
+
+            if (!passwordEncoder.matches(loginDto.getPassword(), user.getPassword())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Неверный пароль");
+            }
+            return ResponseEntity.ok(convertToDto(user));
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Пользователь не найден");
+        }
+    }
+
 }
