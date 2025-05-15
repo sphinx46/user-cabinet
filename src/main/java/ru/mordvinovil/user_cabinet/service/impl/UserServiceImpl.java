@@ -54,7 +54,6 @@ public class UserServiceImpl implements UserService {
         User existingUser = repository.findByEmail(userUpdates.getEmail())
             .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        // Обновляем только те поля, которые пришли в запросе
         if (userUpdates.getFirstName() != null) {
             existingUser.setFirstName(userUpdates.getFirstName());
         }
